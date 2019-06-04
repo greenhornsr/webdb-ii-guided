@@ -1,19 +1,6 @@
 const router = require('express').Router();
-const knex = require('knex');
 const Roles = require('./roles-model');
 
-// install knex and sqlite3
-// configure knex and get a connection to db
-const knexConfig = {
-  client: 'sqlite3',
-  connection: {
-    filename: './data/roles.db3'
-  },
-  useNullAsDefault: true, // required for sqlite3
-  // debug: true, // console logs the SQL query
-}
-
-const db = knex(knexConfig);
 
 router.get('/', (req, res) => {
   Roles.find()
@@ -43,10 +30,10 @@ router.get('/:id', (req, res) => {
 });
 
 router.post('/', (req, res) => {
-  db('roles')
-  .insert(req.body, 'id')
+  Roles.add(req.body)
   .then(ids => {
-    res.status(201).json(ids)
+    // res.status(201).json(ids)
+    res.status(201).redirect('http://localhost:5000/api/roles/')
   })
   .catch(err => {
     res.status(500).json(err)
@@ -54,11 +41,12 @@ router.post('/', (req, res) => {
 });
 
 router.put('/:id', (req, res) => {
-  // update roles
-  db('roles').where({id: req.params.id}).update(req.body)
+  const {id} = req.params
+  const changes = req.body
+  Roles.update(id, changes)
   .then(count => {
     if(count){
-      res.status(200).json({message: `${count} records updated`})
+      res.status(200).redirect('http://localhost:5000/api/roles/')
     }else{
       res.status(404).json({message: 'Role not found'})
     }
@@ -69,12 +57,12 @@ router.put('/:id', (req, res) => {
 });
 
 router.delete('/:id', (req, res) => {
-  // remove roles (inactivate the role)
-  db('roles').where({id: req.params.id}).delete()
+  const {id} = req.params
+  Roles.remove(id)
   .then(count => {
     if(count){
       const unit = count > 1 ? 'records': 'record';
-      res.status(200).json({message: `${count} ${unit} deleted`})
+      res.status(200).json({message: `${count} ${unit} deleted`, id})
     }else{
       res.status(404).json({message: 'Role not found'})
     }
